@@ -1,0 +1,5 @@
+{
+  "name": "Futures Triangle Analyst",
+  "description": "An interactive web application that implements the Futures Triangle methodology. Users can input data for the 'Pull of the Future', 'Push of the Present', and 'Weight of the Past'. The app leverages AI to generate content suggestions with verified sources and analyzes the tensions between these forces to provide strategic foresight.",
+  "requestFramePermissions": []
+}

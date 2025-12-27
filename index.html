@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WB Futures Triangle Analyst</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <style>
+        :root {
+            --wb-blue: #002244;
+            --wb-light: #004c99;
+            --wb-accent: #009FDA;
+            --bg-color: #f4f7f9;
+            --text-color: #333;
+            --border-color: #ddd;
+            --success: #2e7d32;
+            --error: #c62828;
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header --- */
+        header {
+            background-color: var(--wb-blue);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 { margin: 0; font-size: 1.25rem; font-weight: 500; }
+        
+        .header-controls button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .header-controls button:hover { background: rgba(255,255,255,0.2); }
+
+        /* --- Main Layout --- */
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Sidebar (Input & Details) --- */
+        #sidebar {
+            width: 350px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .sidebar-panel {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .panel-header { font-weight: bold; margin-bottom: 1rem; color: var(--wb-blue); font-size: 1.1rem; }
+
+        /* File Upload */
+        .drop-zone {
+            border: 2px dashed var(--wb-light);
+            border-radius: 6px;
+            padding: 2rem 1rem;
+            text-align: center;
+            background: #f8fbff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .drop-zone:hover, .drop-zone.dragover { background: #e6f0fa; border-color: var(--wb-accent); }
+        
+        .file-list { margin-top: 1rem; list-style: none; padding: 0; font-size: 0.9rem; }
+        .file-list li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; }
+
+        .primary-btn {
+            width: 100%;
+            background: var(--wb-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+        .primary-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* Factor Details */
+        .factor-detail-card {
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: white;
+        }
+        .tag.pull { background-color: #2e7d32; }
+        .tag.push { background-color: #d84315; }
+        .tag.weight { background-color: #455a64; }
+
+        /* --- Visualization Area --- */
+        #visualization-container {
+            flex: 1;
+            background-color: #fcfcfc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: auto;
+        }
+
+        svg text { font-family: var(--font-main); user-select: none; }
+        
+        .node { cursor: pointer; transition: r 0.2s; }
+        .node:hover { stroke: #333; stroke-width: 2px; }
+        
+        .link { stroke: #999; stroke-opacity: 0.4; }
+
+        /* Synthesis Overlay */
+        #synthesis-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 800px;
+            background: rgba(255,255,255,0.95);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left: 5px solid var(--wb-accent);
+            display: none;
+            max-height: 30vh;
+            overflow-y: auto;
+        }
+
+        /* --- Settings Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal {
+            background: white;
+            width: 800px;
+            max-width: 90vw;
+            height: 80vh;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .modal-body { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; }
+        
+        .settings-nav { width: 200px; border-right: 1px solid #eee; padding-right: 1rem; }
+        .settings-nav button {
+            display: block; width: 100%; text-align: left; padding: 0.5rem;
+            background: none; border: none; cursor: pointer; border-radius: 4px;
+        }
+        .settings-nav button.active { background: #e3f2fd; color: var(--wb-blue); font-weight: bold; }
+        
+        .settings-content { flex: 1; padding-left: 1.5rem; }
+        .settings-tab { display: none; }
+        .settings-tab.active { display: block; }
+
+        .input-group { margin-bottom: 1rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .input-group input[type="password"], textarea {
+            width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;
+        }
+        textarea { height: 200px; font-family: monospace; font-size: 0.9rem; }
+
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; background: #ccc; }
+        .status-dot.green { background: var(--success); }
+        .status-dot.red { background: var(--error); }
+        .status-dot.yellow { background: orange; animation: pulse 1s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .loader {
+            border: 4px solid #f3f3f3; border-top: 4px solid var(--wb-blue);
+            border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;
+            display: inline-block; vertical-align: middle; margin-right: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>World Bank | Futures Triangle Analyst</h1>
+        <div class="header-controls">
+            <button id="btn-settings">Settings & API Key</button>
+            <button id="btn-export">Export Diagram</button>
+        </div>
+    </header>
+
+    <main>
+        <div id="sidebar">
+            <div id="panel-upload" class="sidebar-panel">
+                <div class="panel-header">Document Analysis</div>
+                <div class="drop-zone" id="drop-zone">
+                    <p>Drag & Drop files here<br><small>(PDF, DOCX, TXT)</small></p>
+                    <input type="file" id="file-input" multiple hidden accept=".pdf,.docx,.txt">
+                </div>
+                <ul class="file-list" id="file-list"></ul>
+                <button id="btn-analyze" class="primary-btn" disabled>Run Analysis</button>
+                <div id="analysis-status" style="margin-top: 1rem; text-align: center; color: #666;"></div>
+            </div>
+
+            <div id="panel-details" class="sidebar-panel hidden">
+                <button class="primary-btn" id="btn-new-analysis" style="margin-bottom: 1rem; background-color: #666;">&larr; New Analysis</button>
+                <div class="panel-header">Factor Details</div>
+                <div id="factor-details-container">
+                    <p style="color:#777; font-style: italic;">Click a node in the triangle to view details.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="visualization-container">
+            <div id="placeholder-text" style="color: #ccc; text-align: center;">
+                <h2>Futures Triangle</h2>
+                <p>Upload documents to generate insights</p>
+            </div>
+        </div>
+
+        <div id="synthesis-panel">
+            <h3 style="margin-top:0; color: var(--wb-blue);">Most Probable Future</h3>
+            <div id="synthesis-content"></div>
+        </div>
+    </main>
+
+    <div id="modal-settings" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button id="btn-close-settings" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-nav">
+                    <button class="active" data-tab="tab-api">API Configuration</button>
+                    <button data-tab="tab-prompts">Prompts</button>
+                </div>
+                <div class="settings-content">
+                    <div id="tab-api" class="settings-tab active">
+                        <h4>Gemini API Key</h4>
+                        <div class="input-group">
+                            <label>API Key</label>
+                            <input type="password" id="input-api-key" placeholder="AIzaSy...">
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <button id="btn-test-api" class="primary-btn" style="width: auto; margin:0;">Test Connection</button>
+                            <button id="btn-clear-api" style="padding: 0.75rem; border: 1px solid var(--error); color: var(--error); background: white; border-radius: 4px; cursor: pointer;">Clear Key</button>
+                            <span id="api-status"><span class="status-dot"></span><span id="api-status-text">Untested</span></span>
+                        </div>
+                        <p style="margin-top: 1rem; font-size: 0.85rem; color: #666; background: #fff3e0; padding: 10px; border-left: 3px solid orange;">
+                            <strong>Note:</strong> Your API key is stored locally in your browser's localStorage. It is never sent to any server other than Google's API endpoints.
+                        </p>
+                    </div>
+
+                    <div id="tab-prompts" class="settings-tab">
+                        <h4>Prompt Engineering</h4>
+                        <div class="input-group">
+                            <label>System Context</label>
+                            <textarea id="prompt-system"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Analysis Prompt</label>
+                            <textarea id="prompt-analysis"></textarea>
+                        </div>
+                        <button id="btn-save-prompts" class="primary-btn" style="width: auto; margin:0;">Save Prompts</button>
+                        <button id="btn-reset-prompts" style="margin-left: 10px; padding: 0.75rem; cursor: pointer;">Reset Defaults</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. PubSub Module ---
+        const PubSub = {
+            events: {},
+            subscribe: function(eventName, fn) {
+                this.events[eventName] = this.events[eventName] || [];
+                this.events[eventName].push(fn);
+            },
+            publish: function(eventName, data) {
+                if (this.events[eventName]) {
+                    this.events[eventName].forEach(fn => fn(data));
+                }
+            }
+        };
+
+        // --- 2. Storage Module ---
+        const StorageModule = {
+            getKeys: () => ({
+                apiKey: localStorage.getItem('wb_ft_api_key'),
+                prompts: JSON.parse(localStorage.getItem('wb_ft_prompts') || 'null')
+            }),
+            setApiKey: (key) => localStorage.setItem('wb_ft_api_key', key),
+            clearApiKey: () => localStorage.removeItem('wb_ft_api_key'),
+            setPrompts: (prompts) => localStorage.setItem('wb_ft_prompts', JSON.stringify(prompts)),
+            
+            getDefaultPrompts: () => ({
+                system: `You are a strategic foresight analyst for the World Bank, skilled in applying the Futures Triangle framework to development projects. You identify forces shaping potential futures with analytical rigor.`,
+                analysis: `Analyze the provided documents using the Futures Triangle framework.
+Identify:
+1. PULL OF THE FUTURE: Aspirations, goals, visions drawing the system forward.
+2. PUSH OF THE PRESENT: Trends, drivers, emerging changes creating momentum.
+3. WEIGHT OF THE PAST: Historical patterns, structural barriers, inertia.
+
+For each factor:
+- Concise name (under 15 words)
+- Specific evidence/quote from text
+- Strength (1-5)
+
+Synthesize the "Most Probable Future" based on the vector sum of these forces.
+Identify relationships (e.g., Weight blocking a Pull).
+
+Return STRICT JSON format:
+{
+  "pull": [{ "id": "pull_1", "factor": "...", "evidence": "...", "strength": 5 }],
+  "push": [{ "id": "push_1", "factor": "...", "evidence": "...", "strength": 5 }],
+  "weight": [{ "id": "weight_1", "factor": "...", "evidence": "...", "strength": 5 }],
+  "synthesis": "Markdown formatted synthesis text...",
+  "relationships": [{ "from": "id", "to": "id", "nature": "blocking/supporting" }]
+}
+IMPORTANT: Do not wrap in markdown code blocks. Return raw JSON.`
+            })
+        };
+
+        // --- 3. Analysis Module (File Processing) ---
+        const AnalysisModule = {
+            init: function() {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            },
+
+            readFile: async (file) => {
+                if (file.type === 'application/pdf') {
+                    return AnalysisModule.readPDF(file);
+                } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                    return AnalysisModule.readDOCX(file);
+                } else {
+                    return AnalysisModule.readText(file);
+                }
+            },
+
+            readText: (file) => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            }),
+
+            readDOCX: (file) => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    mammoth.extractRawText({ arrayBuffer: e.target.result })
+                        .then(result => resolve(result.value))
+                        .catch(reject);
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            }),
+
+            readPDF: async (file) => {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                }
+                return fullText;
+            }
+        };
+
+        // --- 4. API Module ---
+        const APIModule = {
+            generate: async (docContent) => {
+                const { apiKey, prompts } = StorageModule.getKeys();
+                const activePrompts = prompts || StorageModule.getDefaultPrompts();
+                
+                if (!apiKey) throw new Error("API Key missing");
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `${activePrompts.system}\n\n${activePrompts.analysis}\n\nDOCUMENT CONTENT:\n${docContent}`
+                            }]
+                        }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            temperature: 0.5
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                
+                const data = await response.json();
+                try {
+                    const text = data.candidates[0].content.parts[0].text;
+                    // Clean potential markdown blocks if the model ignores the MimeType instruction
+                    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                    return JSON.parse(jsonStr);
+                } catch (e) {
+                    console.error("Parse error", e, data);
+                    throw new Error("Failed to parse AI response. See console.");
+                }
+            },
+
+            testConnection: async (key) => {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "Respond with JSON: {\"status\": \"ok\"}" }] }]
+                    })
+                });
+                return response.ok;
+            }
+        };
+
+        // --- 5. Visualization Module ---
+        const VisModule = {
+            container: document.getElementById('visualization-container'),
+            
+            render: (data) => {
+                VisModule.container.innerHTML = '';
+                const width = VisModule.container.clientWidth;
+                const height = VisModule.container.clientHeight;
+                const pad = 60;
+
+                // Triangle Vertices
+                const pPull = { x: width / 2, y: pad + 20 };
+                const pPush = { x: pad + 40, y: height - pad - 20 };
+                const pWeight = { x: width - pad - 40, y: height - pad - 20 };
+                const center = { x: width / 2, y: height / 2 + 20 };
+
+                // Create SVG
+                const ns = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(ns, "svg");
+                svg.setAttribute("width", "100%");
+                svg.setAttribute("height", "100%");
+                svg.style.overflow = "visible";
+
+                // Draw Triangle
+                const triangle = document.createElementNS(ns, "polygon");
+                triangle.setAttribute("points", `${pPull.x},${pPull.y} ${pPush.x},${pPush.y} ${pWeight.x},${pWeight.y}`);
+                triangle.setAttribute("fill", "none");
+                triangle.setAttribute("stroke", "#e0e0e0");
+                triangle.setAttribute("stroke-width", "2");
+                svg.appendChild(triangle);
+
+                // Labels
+                const createLabel = (x, y, text, color, anchor="middle") => {
+                    const t = document.createElementNS(ns, "text");
+                    t.setAttribute("x", x);
+                    t.setAttribute("y", y);
+                    t.setAttribute("fill", color);
+                    t.setAttribute("font-weight", "bold");
+                    t.setAttribute("text-anchor", anchor);
+                    t.setAttribute("font-size", "16px");
+                    t.textContent = text;
+                    svg.appendChild(t);
+                };
+
+                createLabel(pPull.x, pPull.y - 30, "PULL OF FUTURE", "#2e7d32");
+                createLabel(pPush.x - 20, pPush.y + 40, "PUSH OF PRESENT", "#d84315", "start");
+                createLabel(pWeight.x + 20, pWeight.y + 40, "WEIGHT OF PAST", "#455a64", "end");
+
+                // Draw Relationships (Lines)
+                if (data.relationships) {
+                    data.relationships.forEach(rel => {
+                        const fromNode = VisModule.findNodePos(rel.from, data, pPull, pPush, pWeight, center);
+                        const toNode = VisModule.findNodePos(rel.to, data, pPull, pPush, pWeight, center);
+                        
+                        if (fromNode && toNode) {
+                            const line = document.createElementNS(ns, "line");
+                            line.setAttribute("x1", fromNode.x);
+                            line.setAttribute("y1", fromNode.y);
+                            line.setAttribute("x2", toNode.x);
+                            line.setAttribute("y2", toNode.y);
+                            line.setAttribute("class", "link");
+                            line.setAttribute("stroke-dasharray", rel.nature.includes("block") ? "5,5" : "");
+                            line.setAttribute("stroke", rel.nature.includes("block") ? "#c62828" : "#999");
+                            svg.appendChild(line);
+                        }
+                    });
+                }
+
+                // Draw Factors
+                const drawNodes = (factors, vertex, color, type) => {
+                    factors.forEach((f, i) => {
+                        // Spread nodes out around the vertex towards the center
+                        const offsetX = (center.x - vertex.x) * (0.2 + (Math.random() * 0.4));
+                        const offsetY = (center.y - vertex.y) * (0.2 + (Math.random() * 0.4));
+                        
+                        // Jitter
+                        const jitterX = (Math.random() - 0.5) * 60;
+                        const jitterY = (Math.random() - 0.5) * 60;
+
+                        const x = vertex.x + offsetX + jitterX;
+                        const y = vertex.y + offsetY + jitterY;
+
+                        // Save pos for lines
+                        f._pos = {x, y};
+
+                        const circle = document.createElementNS(ns, "circle");
+                        circle.setAttribute("cx", x);
+                        circle.setAttribute("cy", y);
+                        circle.setAttribute("r", 5 + (f.strength || 1) * 2);
+                        circle.setAttribute("fill", color);
+                        circle.setAttribute("fill-opacity", "0.8");
+                        circle.setAttribute("class", "node");
+                        
+                        // Interaction
+                        circle.onclick = () => PubSub.publish('node-selected', { ...f, type });
+                        
+                        // Tooltip title
+                        const title = document.createElementNS(ns, "title");
+                        title.textContent = f.factor;
+                        circle.appendChild(title);
+
+                        svg.appendChild(circle);
+                    });
+                };
+
+                drawNodes(data.pull || [], pPull, "#2e7d32", "pull");
+                drawNodes(data.push || [], pPush, "#d84315", "push");
+                drawNodes(data.weight || [], pWeight, "#455a64", "weight");
+
+                VisModule.container.appendChild(svg);
+            },
+
+            findNodePos: (id, data, p1, p2, p3, c) => {
+                const all = [...(data.pull||[]), ...(data.push||[]), ...(data.weight||[])];
+                const found = all.find(x => x.id === id);
+                return found ? found._pos : null;
+            }
+        };
+
+        // --- 6. UI Module ---
+        const UIModule = {
+            init: function() {
+                // Drag & Drop
+                const dropZone = document.getElementById('drop-zone');
+                const fileInput = document.getElementById('file-input');
+                
+                dropZone.onclick = () => fileInput.click();
+                dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
+                dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+                dropZone.ondrop = (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    UIModule.handleFiles(e.dataTransfer.files);
+                };
+                fileInput.onchange = (e) => UIModule.handleFiles(e.target.files);
+
+                // Buttons
+                document.getElementById('btn-analyze').onclick = UIModule.runAnalysis;
+                document.getElementById('btn-new-analysis').onclick = UIModule.resetAnalysis;
+                
+                // Settings Modal
+                const modal = document.getElementById('modal-settings');
+                document.getElementById('btn-settings').onclick = () => {
+                    modal.style.display = 'flex';
+                    UIModule.loadSettings();
+                };
+                document.getElementById('btn-close-settings').onclick = () => modal.style.display = 'none';
+                
+                // Settings Tabs
+                document.querySelectorAll('.settings-nav button').forEach(btn => {
+                    btn.onclick = (e) => {
+                        document.querySelectorAll('.settings-nav button').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+                        e.target.classList.add('active');
+                        document.getElementById(e.target.dataset.tab).classList.add('active');
+                    };
+                });
+
+                // API Key Interactions
+                document.getElementById('btn-test-api').onclick = async () => {
+                    const key = document.getElementById('input-api-key').value;
+                    const statusDot = document.querySelector('.status-dot');
+                    const statusText = document.getElementById('api-status-text');
+                    
+                    statusDot.className = 'status-dot yellow';
+                    statusText.textContent = 'Testing...';
+                    
+                    try {
+                        await APIModule.testConnection(key);
+                        statusDot.className = 'status-dot green';
+                        statusText.textContent = 'Valid';
+                        StorageModule.setApiKey(key);
+                    } catch (e) {
+                        statusDot.className = 'status-dot red';
+                        statusText.textContent = 'Invalid';
+                    }
+                };
+
+                document.getElementById('btn-clear-api').onclick = () => {
+                    StorageModule.clearApiKey();
+                    document.getElementById('input-api-key').value = '';
+                    document.getElementById('api-status-text').textContent = 'Untested';
+                    document.querySelector('.status-dot').className = 'status-dot';
+                };
+
+                // Prompts Interactions
+                document.getElementById('btn-save-prompts').onclick = () => {
+                    StorageModule.setPrompts({
+                        system: document.getElementById('prompt-system').value,
+                        analysis: document.getElementById('prompt-analysis').value
+                    });
+                    alert('Prompts saved!');
+                };
+                document.getElementById('btn-reset-prompts').onclick = () => {
+                    const defaults = StorageModule.getDefaultPrompts();
+                    document.getElementById('prompt-system').value = defaults.system;
+                    document.getElementById('prompt-analysis').value = defaults.analysis;
+                };
+                
+                // Export
+                document.getElementById('btn-export').onclick = () => {
+                    const svg = document.querySelector('svg');
+                    if(!svg) return alert("Nothing to export");
+                    const svgData = new XMLSerializer().serializeToString(svg);
+                    const canvas = document.createElement("canvas");
+                    const svgSize = svg.getBoundingClientRect();
+                    canvas.width = svgSize.width;
+                    canvas.height = svgSize.height;
+                    const ctx = canvas.getContext("2d");
+                    const img = document.createElement("img");
+                    img.setAttribute("src", "data:image/svg+xml;base64," + btoa(svgData));
+                    img.onload = function() {
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(0,0,canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                        const a = document.createElement('a');
+                        a.download = "futures-triangle.png";
+                        a.href = canvas.toDataURL("image/png");
+                        a.click();
+                    };
+                };
+
+                // Subscriptions
+                PubSub.subscribe('node-selected', UIModule.showNodeDetails);
+                
+                // Load existing key
+                const keys = StorageModule.getKeys();
+                if(keys.apiKey) document.getElementById('input-api-key').value = keys.apiKey;
+            },
+
+            files: [],
+
+            handleFiles: (fileList) => {
+                for (let file of fileList) UIModule.files.push(file);
+                UIModule.renderFileList();
+                document.getElementById('btn-analyze').disabled = UIModule.files.length === 0;
+            },
+
+            renderFileList: () => {
+                const list = document.getElementById('file-list');
+                list.innerHTML = UIModule.files.map((f, i) => `
+                    <li>
+                        <span>${f.name}</span>
+                        <span style="cursor:pointer; color:red;" onclick="UIModule.removeFile(${i})">&times;</span>
+                    </li>
+                `).join('');
+            },
+
+            removeFile: (index) => {
+                UIModule.files.splice(index, 1);
+                UIModule.renderFileList();
+                document.getElementById('btn-analyze').disabled = UIModule.files.length === 0;
+            },
+
+            runAnalysis: async () => {
+                const btn = document.getElementById('btn-analyze');
+                const status = document.getElementById('analysis-status');
+                
+                if (!StorageModule.getKeys().apiKey) {
+                    alert("Please set your API Key in Settings first.");
+                    return;
+                }
+
+                btn.disabled = true;
+                status.innerHTML = '<div class="loader"></div> Extracting text...';
+
+                try {
+                    // 1. Extract Text
+                    let fullText = "";
+                    for (let file of UIModule.files) {
+                        const text = await AnalysisModule.readFile(file);
+                        fullText += `--- Document: ${file.name} ---\n${text}\n\n`;
+                    }
+
+                    // 2. Call API
+                    status.innerHTML = '<div class="loader"></div> Analyzing with Gemini...';
+                    const data = await APIModule.generate(fullText);
+
+                    // 3. Render
+                    VisModule.render(data);
+                    
+                    // 4. Update UI
+                    document.getElementById('panel-upload').classList.add('hidden');
+                    document.getElementById('panel-details').classList.remove('hidden');
+                    document.getElementById('placeholder-text').classList.add('hidden');
+                    
+                    if(data.synthesis) {
+                        const sPanel = document.getElementById('synthesis-panel');
+                        document.getElementById('synthesis-content').textContent = data.synthesis;
+                        sPanel.style.display = 'block';
+                    }
+
+                } catch (err) {
+                    alert(err.message);
+                    status.innerHTML = `<span style="color:red">${err.message}</span>`;
+                } finally {
+                    btn.disabled = false;
+                }
+            },
+
+            showNodeDetails: (node) => {
+                const container = document.getElementById('factor-details-container');
+                container.innerHTML = `
+                    <div class="factor-detail-card">
+                        <span class="tag ${node.type}">${node.type.toUpperCase()}</span>
+                        <h3>${node.factor}</h3>
+                        <p><strong>Strength:</strong> ${node.strength}/5</p>
+                        <hr style="border:0; border-top:1px solid #eee; margin: 10px 0;">
+                        <p><strong>Evidence:</strong></p>
+                        <blockquote style="background:#f9f9f9; border-left: 3px solid #ccc; padding: 5px 10px; margin: 0;">
+                            "${node.evidence}"
+                        </blockquote>
+                    </div>
+                `;
+            },
+
+            resetAnalysis: () => {
+                document.getElementById('panel-upload').classList.remove('hidden');
+                document.getElementById('panel-details').classList.add('hidden');
+                document.getElementById('visualization-container').innerHTML = `
+                    <div id="placeholder-text" style="color: #ccc; text-align: center;">
+                        <h2>Futures Triangle</h2>
+                        <p>Upload documents to generate insights</p>
+                    </div>
+                `;
+                document.getElementById('synthesis-panel').style.display = 'none';
+                document.getElementById('analysis-status').innerHTML = '';
+            },
+
+            loadSettings: () => {
+                const keys = StorageModule.getKeys();
+                const defaults = StorageModule.getDefaultPrompts();
+                
+                if (keys.apiKey) document.getElementById('input-api-key').value = keys.apiKey;
+                
+                const prompts = keys.prompts || defaults;
+                document.getElementById('prompt-system').value = prompts.system;
+                document.getElementById('prompt-analysis').value = prompts.analysis;
+            }
+        };
+
+        // --- Init ---
+        AnalysisModule.init();
+        UIModule.init();
+
+    </script>
+</body>
+</html>

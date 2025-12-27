@@ -5,20 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WB Futures Triangle Analyst</title>
     
+    <!-- External Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
     <style>
         :root {
-            --wb-blue: #002244;
-            --wb-light: #004c99;
-            --wb-accent: #009FDA;
-            --bg-color: #f4f7f9;
-            --text-color: #333;
-            --border-color: #ddd;
-            --success: #2e7d32;
-            --error: #c62828;
-            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            /* Light & Airy Theme */
+            --primary-dark: #FFFFFF;
+            --primary-mid: #546E7A;
+            --accent: #0288D1;
+            --accent-light: #E1F5FE;
+            --bg-color: #FAFAFA;
+            --text-main: #37474F;
+            --text-light: #90A4AE;
+            --border-color: #E0E0E0;
+            
+            /* Dot Colors */
+            --pull-color: #4CAF50;
+            --push-color: #2196F3;
+            --weight-color: #E57373;
+
+            --font-main: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
 
         * { box-sizing: border-box; }
@@ -28,7 +36,7 @@
             margin: 0;
             padding: 0;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -36,29 +44,34 @@
 
         /* --- Header --- */
         header {
-            background-color: var(--wb-blue);
-            color: white;
+            background-color: var(--primary-dark);
+            color: var(--text-main);
             padding: 1rem 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            flex-shrink: 0;
         }
 
-        header h1 { margin: 0; font-size: 1.25rem; font-weight: 500; }
+        header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: 0.5px; color: var(--accent); }
         
+        .header-controls { display: flex; gap: 10px; }
+
         .header-controls button {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
+            background: white;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
             padding: 0.5rem 1rem;
             border-radius: 4px;
             cursor: pointer;
-            margin-left: 0.5rem;
-            transition: background 0.2s;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            font-weight: 500;
         }
 
-        .header-controls button:hover { background: rgba(255,255,255,0.2); }
+        .header-controls button:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
 
         /* --- Main Layout --- */
         main {
@@ -68,114 +81,158 @@
             position: relative;
         }
 
-        /* --- Sidebar (Input & Details) --- */
+        /* --- Sidebar --- */
         #sidebar {
-            width: 350px;
+            width: 380px;
             background: white;
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             z-index: 10;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.01);
+            flex-shrink: 0;
         }
 
-        .sidebar-panel {
-            padding: 1.5rem;
-            overflow-y: auto;
-            flex: 1;
-        }
+        .sidebar-panel { padding: 1.5rem; overflow-y: auto; flex: 1; }
 
-        .panel-header { font-weight: bold; margin-bottom: 1rem; color: var(--wb-blue); font-size: 1.1rem; }
+        .panel-header { font-weight: 600; margin-bottom: 1.25rem; color: var(--primary-mid); font-size: 1.1rem; border-bottom: 2px solid var(--accent-light); padding-bottom: 0.5rem; }
 
         /* File Upload */
         .drop-zone {
-            border: 2px dashed var(--wb-light);
-            border-radius: 6px;
-            padding: 2rem 1rem;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 3rem 1.5rem;
             text-align: center;
-            background: #f8fbff;
+            background: #FAFAFA;
             cursor: pointer;
             transition: all 0.2s;
+            color: var(--text-light);
         }
-        .drop-zone:hover, .drop-zone.dragover { background: #e6f0fa; border-color: var(--wb-accent); }
+        .drop-zone:hover, .drop-zone.dragover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
         
         .file-list { margin-top: 1rem; list-style: none; padding: 0; font-size: 0.9rem; }
-        .file-list li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; }
+        .file-list li { display: flex; justify-content: space-between; padding: 8px 12px; margin-bottom: 5px; background: white; border-radius: 4px; border: 1px solid #f0f0f0; }
 
         .primary-btn {
             width: 100%;
-            background: var(--wb-blue);
+            background: var(--accent);
             color: white;
             border: none;
-            padding: 0.75rem;
-            border-radius: 4px;
+            padding: 0.85rem;
+            border-radius: 6px;
             font-size: 1rem;
             margin-top: 1rem;
             cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+            box-shadow: 0 2px 4px rgba(2, 136, 209, 0.2);
         }
-        .primary-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .primary-btn:hover { background: #0277BD; }
+        .primary-btn:disabled { background: #CFD8DC; cursor: not-allowed; box-shadow: none; }
 
-        /* Factor Details */
-        .factor-detail-card {
-            border: 1px solid #eee;
-            border-radius: 4px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        .input-group { margin-bottom: 1.5rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--primary-mid); font-size: 0.9rem; }
+        .input-group input[type="password"], textarea, input[type="text"] {
+            width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px;
+            font-family: inherit; font-size: 0.95rem; transition: border-color 0.2s;
+            background: #FAFAFA;
         }
-        .tag {
-            display: inline-block;
-            font-size: 0.75rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-            color: white;
-        }
-        .tag.pull { background-color: #2e7d32; }
-        .tag.push { background-color: #d84315; }
-        .tag.weight { background-color: #455a64; }
+        .input-group input:focus, textarea:focus { outline: none; border-color: var(--accent); background: white; }
+        textarea { height: 250px; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85rem; line-height: 1.4; color: #333; }
 
-        /* --- Visualization Area --- */
-        #visualization-container {
+        /* --- New Layout Structure --- */
+        #results-area {
             flex: 1;
-            background-color: #fcfcfc;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            background: #fcfcfc;
+        }
+
+        /* Visualization section - fixed height, no overlap */
+        #visualization-section {
+            min-height: 480px; 
+            max-height: 480px;
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #visualization-container {
+            width: 100%;
+            height: 380px;
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
-            overflow: auto;
+        }
+        
+        #visualization-container svg {
+            max-width: 100%;
+            max-height: 100%;
         }
 
-        svg text { font-family: var(--font-main); user-select: none; }
-        
-        .node { cursor: pointer; transition: r 0.2s; }
-        .node:hover { stroke: #333; stroke-width: 2px; }
-        
-        .link { stroke: #999; stroke-opacity: 0.4; }
+        /* Legend below triangle */
+        #factor-legend {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            padding: 10px 20px;
+            font-size: 12px;
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+            width: 100%;
+            margin-top: 10px;
+        }
 
-        /* Synthesis Overlay */
+        /* Synthesis section - completely separate */
+        #synthesis-section {
+            padding: 30px 40px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            display: none; 
+        }
+
         #synthesis-panel {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            max-width: 800px;
-            background: rgba(255,255,255,0.95);
+            max-width: 900px;
+            margin: 0 auto;
             padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border-left: 5px solid var(--wb-accent);
-            display: none;
-            max-height: 30vh;
-            overflow-y: auto;
+            background: #f8fbff;
+            border-left: 5px solid var(--accent);
+            border-radius: 4px;
         }
 
+        #synthesis-panel h3 {
+            margin-top: 0;
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+
+        /* Factor tables section */
+        #factors-tables-section {
+            padding: 30px 40px;
+            background: white;
+            display: none; 
+            padding-bottom: 60px;
+        }
+
+        #factors-tables {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .node { cursor: pointer; transition: all 0.3s; }
+        .node:hover circle { stroke: #333; stroke-width: 2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        
         /* --- Settings Modal --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
             display: none;
             justify-content: center;
             align-items: center;
@@ -183,126 +240,156 @@
         }
         .modal {
             background: white;
-            width: 800px;
-            max-width: 90vw;
-            height: 80vh;
+            width: 800px; max-width: 90vw; height: 80vh;
             border-radius: 8px;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
         }
-        .modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
-        .modal-body { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;}
+        .modal-body { flex: 1; padding: 0; overflow: hidden; display: flex; }
         
-        .settings-nav { width: 200px; border-right: 1px solid #eee; padding-right: 1rem; }
+        .settings-nav { width: 220px; background: #fafafa; border-right: 1px solid #eee; padding: 1.5rem 0; }
         .settings-nav button {
-            display: block; width: 100%; text-align: left; padding: 0.5rem;
-            background: none; border: none; cursor: pointer; border-radius: 4px;
+            display: block; width: 100%; text-align: left; padding: 1rem 1.5rem;
+            background: none; border: none; cursor: pointer; color: var(--text-light);
+            font-weight: 500;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
         }
-        .settings-nav button.active { background: #e3f2fd; color: var(--wb-blue); font-weight: bold; }
+        .settings-nav button.active { background: white; color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
         
-        .settings-content { flex: 1; padding-left: 1.5rem; }
+        .settings-content { flex: 1; padding: 2rem; overflow-y: auto; }
         .settings-tab { display: none; }
-        .settings-tab.active { display: block; }
+        .settings-tab.active { display: block; animation: fadeIn 0.3s ease; }
 
-        .input-group { margin-bottom: 1rem; }
-        .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-        .input-group input[type="password"], textarea {
-            width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;
-        }
-        textarea { height: 200px; font-family: monospace; font-size: 0.9rem; }
-
-        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; background: #ccc; }
-        .status-dot.green { background: var(--success); }
-        .status-dot.red { background: var(--error); }
-        .status-dot.yellow { background: orange; animation: pulse 1s infinite; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-        /* Utilities */
-        .hidden { display: none !important; }
         .loader {
-            border: 4px solid #f3f3f3; border-top: 4px solid var(--wb-blue);
-            border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;
+            border: 3px solid #f3f3f3; border-top: 3px solid var(--accent);
+            border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite;
             display: inline-block; vertical-align: middle; margin-right: 10px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; background: #ccc; }
+        .status-dot.green { background: #4CAF50; }
+        .status-dot.red { background: #E57373; }
+        .status-dot.yellow { background: #FFB74D; animation: pulse 1s infinite; }
+
+        /* Print Styles */
+        @media print {
+            header, #sidebar, .modal-overlay, #results-area { display: none !important; }
+            body { height: auto; overflow: visible; background: white; display: block; }
+        }
+        
+        /* Utils */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>World Bank | Futures Triangle Analyst</h1>
+        <h1>Futures Triangle Analyst</h1>
         <div class="header-controls">
             <button id="btn-settings">Settings & API Key</button>
-            <button id="btn-export">Export Diagram</button>
+            <button id="btn-export-img">Save Image</button>
+            <button id="btn-export-report" style="background-color: var(--accent); border-color: var(--accent); color: white;">Export Report</button>
         </div>
     </header>
 
     <main>
+        <!-- Sidebar -->
         <div id="sidebar">
             <div id="panel-upload" class="sidebar-panel">
                 <div class="panel-header">Document Analysis</div>
                 <div class="drop-zone" id="drop-zone">
-                    <p>Drag & Drop files here<br><small>(PDF, DOCX, TXT)</small></p>
+                    <p style="margin:0; font-weight:600; color:var(--text-main);">Upload Project Docs</p>
+                    <p style="margin:0.5rem 0; font-size:0.85rem; color:var(--text-light);">Drag & drop PDF, DOCX, TXT</p>
                     <input type="file" id="file-input" multiple hidden accept=".pdf,.docx,.txt">
                 </div>
                 <ul class="file-list" id="file-list"></ul>
+                
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                    <p style="margin:0 0 0.5rem 0; font-weight:600; color:var(--text-main); font-size:0.95rem;">Manual Input</p>
+                    <textarea id="manual-input" placeholder="Enter specific factors, context, or notes here..." style="width:100%; height:100px; padding:0.75rem; border:1px solid var(--border-color); border-radius:4px; font-family:inherit; font-size:0.9rem; resize:vertical; background-color: #FAFAFA;"></textarea>
+                </div>
+
                 <button id="btn-analyze" class="primary-btn" disabled>Run Analysis</button>
-                <div id="analysis-status" style="margin-top: 1rem; text-align: center; color: #666;"></div>
+                <div id="analysis-status" style="margin-top: 1rem; text-align: center; color: var(--text-light); font-size: 0.9rem;"></div>
             </div>
 
             <div id="panel-details" class="sidebar-panel hidden">
-                <button class="primary-btn" id="btn-new-analysis" style="margin-bottom: 1rem; background-color: #666;">&larr; New Analysis</button>
+                <button class="primary-btn" id="btn-new-analysis" style="margin-bottom: 1rem; background-color: var(--text-light); font-size:0.9rem; padding:0.5rem; border:none; color:white;">&larr; Start New Analysis</button>
                 <div class="panel-header">Factor Details</div>
                 <div id="factor-details-container">
-                    <p style="color:#777; font-style: italic;">Click a node in the triangle to view details.</p>
+                    <p style="color:var(--text-light); font-style: italic; text-align: center; margin-top: 2rem;">
+                        Select a node in the diagram to view its detailed analysis and sources.
+                    </p>
                 </div>
             </div>
         </div>
 
-        <div id="visualization-container">
-            <div id="placeholder-text" style="color: #ccc; text-align: center;">
-                <h2>Futures Triangle</h2>
-                <p>Upload documents to generate insights</p>
+        <!-- Right Content Area (Results) -->
+        <div id="results-area">
+            
+            <!-- Section 1: Triangle Visualization -->
+            <div id="visualization-section">
+                <div id="visualization-container">
+                    <div id="placeholder-text" style="color: var(--text-light); text-align: center;">
+                        <h2 style="color:var(--primary-mid); margin-bottom:0.5rem;">Futures Triangle</h2>
+                        <p>Upload documents to generate insights</p>
+                    </div>
+                </div>
+                <div id="factor-legend"></div>
             </div>
-        </div>
 
-        <div id="synthesis-panel">
-            <h3 style="margin-top:0; color: var(--wb-blue);">Most Probable Future</h3>
-            <div id="synthesis-content"></div>
+            <!-- Section 2: Synthesis -->
+            <div id="synthesis-section">
+                <div id="synthesis-panel">
+                    <h3>Most Probable Future (Synthesis)</h3>
+                    <div id="synthesis-content" style="line-height:1.6; color:var(--text-main); font-size: 0.95rem;"></div>
+                </div>
+            </div>
+
+            <!-- Section 3: Factor Tables -->
+            <div id="factors-tables-section">
+                <div id="factors-tables"></div>
+            </div>
+
         </div>
     </main>
 
+    <!-- Settings Modal -->
     <div id="modal-settings" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
                 <h3>Settings</h3>
-                <button id="btn-close-settings" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+                <button id="btn-close-settings" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-light);">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="settings-nav">
                     <button class="active" data-tab="tab-api">API Configuration</button>
-                    <button data-tab="tab-prompts">Prompts</button>
+                    <button data-tab="tab-prompts">Prompt Engineering</button>
                 </div>
                 <div class="settings-content">
                     <div id="tab-api" class="settings-tab active">
-                        <h4>Gemini API Key</h4>
+                        <h4 style="margin-top:0; color:var(--primary-mid);">Gemini API Configuration</h4>
                         <div class="input-group">
                             <label>API Key</label>
                             <input type="password" id="input-api-key" placeholder="AIzaSy...">
                         </div>
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <button id="btn-test-api" class="primary-btn" style="width: auto; margin:0;">Test Connection</button>
-                            <button id="btn-clear-api" style="padding: 0.75rem; border: 1px solid var(--error); color: var(--error); background: white; border-radius: 4px; cursor: pointer;">Clear Key</button>
-                            <span id="api-status"><span class="status-dot"></span><span id="api-status-text">Untested</span></span>
+                        <div class="input-group">
+                            <label>Model ID</label>
+                            <input type="text" id="input-model-id" placeholder="gemini-2.5-flash" value="gemini-2.5-flash">
                         </div>
-                        <p style="margin-top: 1rem; font-size: 0.85rem; color: #666; background: #fff3e0; padding: 10px; border-left: 3px solid orange;">
-                            <strong>Note:</strong> Your API key is stored locally in your browser's localStorage. It is never sent to any server other than Google's API endpoints.
-                        </p>
+                        <div style="display:flex; gap:10px;">
+                            <button id="btn-test-api" class="primary-btn" style="width: auto; margin:0;">Test Connection</button>
+                            <button id="btn-clear-api" style="padding: 0.75rem; border: 1px solid #E57373; color: #E57373; background: white; border-radius: 4px; cursor: pointer;">Clear Key</button>
+                            <span id="api-status" style="margin-left:10px; align-self:center;"><span class="status-dot"></span><span id="api-status-text">Untested</span></span>
+                        </div>
                     </div>
-
                     <div id="tab-prompts" class="settings-tab">
-                        <h4>Prompt Engineering</h4>
+                        <h4 style="margin-top:0; color:var(--primary-mid);">Prompt Engineering</h4>
                         <div class="input-group">
                             <label>System Context</label>
                             <textarea id="prompt-system"></textarea>
@@ -311,16 +398,18 @@
                             <label>Analysis Prompt</label>
                             <textarea id="prompt-analysis"></textarea>
                         </div>
-                        <button id="btn-save-prompts" class="primary-btn" style="width: auto; margin:0;">Save Prompts</button>
-                        <button id="btn-reset-prompts" style="margin-left: 10px; padding: 0.75rem; cursor: pointer;">Reset Defaults</button>
+                        <div style="display:flex; gap:10px;">
+                            <button id="btn-save-prompts" class="primary-btn" style="width: auto; margin:0;">Save Prompts</button>
+                            <button id="btn-reset-prompts" style="padding: 0.75rem; background:white; border:1px solid #eee; border-radius:4px; cursor: pointer;">Reset Defaults</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Application Logic -->
     <script>
-        // --- 1. PubSub Module ---
         const PubSub = {
             events: {},
             subscribe: function(eventName, fn) {
@@ -328,84 +417,79 @@
                 this.events[eventName].push(fn);
             },
             publish: function(eventName, data) {
-                if (this.events[eventName]) {
-                    this.events[eventName].forEach(fn => fn(data));
-                }
+                if (this.events[eventName]) this.events[eventName].forEach(fn => fn(data));
             }
         };
 
-        // --- 2. Storage Module ---
         const StorageModule = {
             getKeys: () => ({
-                apiKey: localStorage.getItem('wb_ft_api_key'),
+                apiKey: (localStorage.getItem('wb_ft_api_key') || '').trim(),
+                modelId: localStorage.getItem('wb_ft_model_id') || 'gemini-2.5-flash',
                 prompts: JSON.parse(localStorage.getItem('wb_ft_prompts') || 'null')
             }),
-            setApiKey: (key) => localStorage.setItem('wb_ft_api_key', key),
+            setApiKey: (key) => localStorage.setItem('wb_ft_api_key', key.trim()),
             clearApiKey: () => localStorage.removeItem('wb_ft_api_key'),
+            setModelId: (id) => localStorage.setItem('wb_ft_model_id', id),
             setPrompts: (prompts) => localStorage.setItem('wb_ft_prompts', JSON.stringify(prompts)),
-            
             getDefaultPrompts: () => ({
-                system: `You are a strategic foresight analyst for the World Bank, skilled in applying the Futures Triangle framework to development projects. You identify forces shaping potential futures with analytical rigor.`,
+                system: `You are a strategic foresight analyst for the World Bank, skilled in applying the Futures Triangle framework.`,
                 analysis: `Analyze the provided documents using the Futures Triangle framework.
-Identify:
-1. PULL OF THE FUTURE: Aspirations, goals, visions drawing the system forward.
-2. PUSH OF THE PRESENT: Trends, drivers, emerging changes creating momentum.
-3. WEIGHT OF THE PAST: Historical patterns, structural barriers, inertia.
 
-For each factor:
-- Concise name (under 15 words)
-- Specific evidence/quote from text
-- Strength (1-5)
+Identify forces in three categories:
+1. PULL OF THE FUTURE (aspirations, goals, visions)
+2. PUSH OF THE PRESENT (trends, drivers, momentum)
+3. WEIGHT OF THE PAST (barriers, history, inertia)
 
-Synthesize the "Most Probable Future" based on the vector sum of these forces.
-Identify relationships (e.g., Weight blocking a Pull).
-
-Return STRICT JSON format:
+Return a JSON object with this exact structure:
 {
-  "pull": [{ "id": "pull_1", "factor": "...", "evidence": "...", "strength": 5 }],
-  "push": [{ "id": "push_1", "factor": "...", "evidence": "...", "strength": 5 }],
-  "weight": [{ "id": "weight_1", "factor": "...", "evidence": "...", "strength": 5 }],
-  "synthesis": "Markdown formatted synthesis text...",
-  "relationships": [{ "from": "id", "to": "id", "nature": "blocking/supporting" }]
+  "pull": [ { "id": "pull_1", "factor": "Concise Title", "explanation": "...", "evidence": "...", "strength": 5 } ],
+  "push": [ { "id": "push_1", "factor": "...", ... } ],
+  "weight": [ { "id": "weight_1", "factor": "...", ... } ],
+  "synthesis": "Synthesis text...",
+  "relationships": []
 }
-IMPORTANT: Do not wrap in markdown code blocks. Return raw JSON.`
+IMPORTANT: Return ONLY valid JSON. If returning a list, wrap it in the structure above.`
             })
         };
 
-        // --- 3. Analysis Module (File Processing) ---
         const AnalysisModule = {
             init: function() {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            },
-
-            readFile: async (file) => {
-                if (file.type === 'application/pdf') {
-                    return AnalysisModule.readPDF(file);
-                } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                    return AnalysisModule.readDOCX(file);
-                } else {
-                    return AnalysisModule.readText(file);
+                try {
+                    if (typeof pdfjsLib !== 'undefined') {
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    }
+                } catch(e) {
+                    console.error("PDF Library Init Error", e);
                 }
             },
-
-            readText: (file) => new Promise((resolve, reject) => {
+            readFile: async (file) => {
+                const type = file.type;
+                const name = file.name.toLowerCase();
+                
+                try {
+                    if (type === 'application/pdf' || name.endsWith('.pdf')) {
+                        if (typeof pdfjsLib === 'undefined') throw new Error("PDF Library not loaded");
+                        return AnalysisModule.readPDF(file);
+                    } else if (type.includes('word') || type.includes('officedocument') || name.endsWith('.docx')) {
+                        if (typeof mammoth === 'undefined') throw new Error("Word Library not loaded");
+                        return AnalysisModule.readDOCX(file);
+                    } else {
+                        return AnalysisModule.readText(file);
+                    }
+                } catch (e) {
+                    throw new Error(`Failed to read ${file.name}: ${e.message}`);
+                }
+            },
+            readText: (file) => new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = reject;
                 reader.readAsText(file);
             }),
-
             readDOCX: (file) => new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    mammoth.extractRawText({ arrayBuffer: e.target.result })
-                        .then(result => resolve(result.value))
-                        .catch(reject);
-                };
-                reader.onerror = reject;
+                reader.onload = (e) => mammoth.extractRawText({ arrayBuffer: e.target.result }).then(r => resolve(r.value));
                 reader.readAsArrayBuffer(file);
             }),
-
             readPDF: async (file) => {
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
@@ -419,268 +503,283 @@ IMPORTANT: Do not wrap in markdown code blocks. Return raw JSON.`
             }
         };
 
-        // --- 4. API Module ---
         const APIModule = {
             generate: async (docContent) => {
-                const { apiKey, prompts } = StorageModule.getKeys();
+                const { apiKey, modelId, prompts } = StorageModule.getKeys();
                 const activePrompts = prompts || StorageModule.getDefaultPrompts();
                 
-                if (!apiKey) throw new Error("API Key missing");
+                if (!apiKey) throw new Error("API Key missing. Please set it in Settings.");
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
                 
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: `${activePrompts.system}\n\n${activePrompts.analysis}\n\nDOCUMENT CONTENT:\n${docContent}`
-                            }]
-                        }],
-                        generationConfig: {
-                            responseMimeType: "application/json",
-                            temperature: 0.5
-                        }
+                        contents: [{ parts: [{ text: `${activePrompts.system}\n\n${activePrompts.analysis}\n\nDOCUMENT CONTENT:\n${docContent}` }] }],
+                        generationConfig: { responseMimeType: "application/json", temperature: 0.4 }
                     })
                 });
 
-                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                
+                if (!response.ok) {
+                    const err = await response.json().catch(()=>({}));
+                    throw new Error(`API Error: ${err.error?.message || response.statusText}`);
+                }
                 const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (!text) throw new Error("Empty response from AI");
+
+                // Improved JSON extraction handling Arrays and Objects
+                let jsonStr = text;
+                const match = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+                if (match) {
+                    jsonStr = match[0];
+                }
+                
                 try {
-                    const text = data.candidates[0].content.parts[0].text;
-                    // Clean potential markdown blocks if the model ignores the MimeType instruction
-                    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
                     return JSON.parse(jsonStr);
-                } catch (e) {
-                    console.error("Parse error", e, data);
-                    throw new Error("Failed to parse AI response. See console.");
+                } catch(e) {
+                    console.error("JSON Parse Error", text);
+                    throw new Error("Failed to parse AI response. The model output was not valid JSON.");
                 }
             },
-
-            testConnection: async (key) => {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+            testConnection: async (key, modelId) => {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${key}`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: "Respond with JSON: {\"status\": \"ok\"}" }] }]
-                    })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "Respond with JSON: {\"status\": \"ok\"}" }] }] })
                 });
-                return response.ok;
+                if (!response.ok) throw new Error(response.statusText);
+                return true;
             }
         };
 
-        // --- 5. Visualization Module ---
         const VisModule = {
             container: document.getElementById('visualization-container'),
             
             render: (data) => {
-                VisModule.container.innerHTML = '';
-                const width = VisModule.container.clientWidth;
-                const height = VisModule.container.clientHeight;
-                const pad = 60;
+                const container = document.getElementById('visualization-container');
+                container.innerHTML = '';
+                
+                const width = 700;
+                const height = 350;
+                const pad = 40;
+                
+                const pPull = { x: width / 2, y: pad };
+                const pPush = { x: pad + 20, y: height - pad };
+                const pWeight = { x: width - pad - 20, y: height - pad };
+                const center = { x: width / 2, y: height / 2 + 30 };
 
-                // Triangle Vertices
-                const pPull = { x: width / 2, y: pad + 20 };
-                const pPush = { x: pad + 40, y: height - pad - 20 };
-                const pWeight = { x: width - pad - 40, y: height - pad - 20 };
-                const center = { x: width / 2, y: height / 2 + 20 };
-
-                // Create SVG
                 const ns = "http://www.w3.org/2000/svg";
                 const svg = document.createElementNS(ns, "svg");
-                svg.setAttribute("width", "100%");
-                svg.setAttribute("height", "100%");
-                svg.style.overflow = "visible";
+                svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+                svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+                svg.style.width = "100%";
+                svg.style.maxWidth = "700px";
+                svg.style.height = "auto";
 
-                // Draw Triangle
+                // Triangle
                 const triangle = document.createElementNS(ns, "polygon");
                 triangle.setAttribute("points", `${pPull.x},${pPull.y} ${pPush.x},${pPush.y} ${pWeight.x},${pWeight.y}`);
                 triangle.setAttribute("fill", "none");
-                triangle.setAttribute("stroke", "#e0e0e0");
+                triangle.setAttribute("stroke", "#BDC3C7");
                 triangle.setAttribute("stroke-width", "2");
+                triangle.setAttribute("stroke-linejoin", "round");
                 svg.appendChild(triangle);
 
                 // Labels
-                const createLabel = (x, y, text, color, anchor="middle") => {
+                const createLabel = (x, y, text, color, anchor) => {
                     const t = document.createElementNS(ns, "text");
-                    t.setAttribute("x", x);
-                    t.setAttribute("y", y);
-                    t.setAttribute("fill", color);
-                    t.setAttribute("font-weight", "bold");
+                    t.setAttribute("x", x); t.setAttribute("y", y);
+                    t.setAttribute("fill", color); t.setAttribute("font-weight", "bold");
                     t.setAttribute("text-anchor", anchor);
-                    t.setAttribute("font-size", "16px");
                     t.textContent = text;
                     svg.appendChild(t);
                 };
+                createLabel(pPull.x, pPull.y - 15, "PULL OF FUTURE", "#4CAF50", "middle");
+                createLabel(pPush.x, pPush.y + 25, "PUSH OF PRESENT", "#2196F3", "start");
+                createLabel(pWeight.x, pWeight.y + 25, "WEIGHT OF PAST", "#E57373", "end");
 
-                createLabel(pPull.x, pPull.y - 30, "PULL OF FUTURE", "#2e7d32");
-                createLabel(pPush.x - 20, pPush.y + 40, "PUSH OF PRESENT", "#d84315", "start");
-                createLabel(pWeight.x + 20, pWeight.y + 40, "WEIGHT OF PAST", "#455a64", "end");
-
-                // Draw Relationships (Lines)
-                if (data.relationships) {
-                    data.relationships.forEach(rel => {
-                        const fromNode = VisModule.findNodePos(rel.from, data, pPull, pPush, pWeight, center);
-                        const toNode = VisModule.findNodePos(rel.to, data, pPull, pPush, pWeight, center);
-                        
-                        if (fromNode && toNode) {
-                            const line = document.createElementNS(ns, "line");
-                            line.setAttribute("x1", fromNode.x);
-                            line.setAttribute("y1", fromNode.y);
-                            line.setAttribute("x2", toNode.x);
-                            line.setAttribute("y2", toNode.y);
-                            line.setAttribute("class", "link");
-                            line.setAttribute("stroke-dasharray", rel.nature.includes("block") ? "5,5" : "");
-                            line.setAttribute("stroke", rel.nature.includes("block") ? "#c62828" : "#999");
-                            svg.appendChild(line);
-                        }
-                    });
-                }
-
-                // Draw Factors
                 const drawNodes = (factors, vertex, color, type) => {
+                    // Safety check for empty factors
+                    if (!factors || factors.length === 0) return;
+
+                    const nodeCount = factors.length;
+                    const cols = Math.min(4, nodeCount);
+                    const spacing = 35;
+                    
                     factors.forEach((f, i) => {
-                        // Spread nodes out around the vertex towards the center
-                        const offsetX = (center.x - vertex.x) * (0.2 + (Math.random() * 0.4));
-                        const offsetY = (center.y - vertex.y) * (0.2 + (Math.random() * 0.4));
+                        const row = Math.floor(i / cols);
+                        const col = i % cols;
                         
-                        // Jitter
-                        const jitterX = (Math.random() - 0.5) * 60;
-                        const jitterY = (Math.random() - 0.5) * 60;
-
-                        const x = vertex.x + offsetX + jitterX;
-                        const y = vertex.y + offsetY + jitterY;
-
-                        // Save pos for lines
+                        const dx = center.x - vertex.x;
+                        const dy = center.y - vertex.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        const ux = dx / dist;
+                        const uy = dy / dist;
+                        const px = -uy;
+                        const py = ux;
+                        
+                        const depth = 50 + row * spacing;
+                        const spread = (col - (Math.min(cols, nodeCount - row * cols) - 1) / 2) * spacing;
+                        
+                        const x = vertex.x + ux * depth + px * spread;
+                        const y = vertex.y + uy * depth + py * spread;
+                        
                         f._pos = {x, y};
 
+                        const g = document.createElementNS(ns, "g");
+                        g.style.cursor = "pointer";
+                        
                         const circle = document.createElementNS(ns, "circle");
-                        circle.setAttribute("cx", x);
-                        circle.setAttribute("cy", y);
-                        circle.setAttribute("r", 5 + (f.strength || 1) * 2);
-                        circle.setAttribute("fill", color);
-                        circle.setAttribute("fill-opacity", "0.8");
-                        circle.setAttribute("class", "node");
+                        circle.setAttribute("cx", x); circle.setAttribute("cy", y);
+                        circle.setAttribute("r", 12); circle.setAttribute("fill", color);
+                        circle.setAttribute("stroke", "#fff"); circle.setAttribute("stroke-width", "2");
                         
-                        // Interaction
-                        circle.onclick = () => PubSub.publish('node-selected', { ...f, type });
+                        const label = document.createElementNS(ns, "text");
+                        label.setAttribute("x", x); label.setAttribute("y", y);
+                        label.setAttribute("text-anchor", "middle");
+                        label.setAttribute("dominant-baseline", "central");
+                        label.setAttribute("fill", "white");
+                        label.setAttribute("font-size", "10px");
+                        label.setAttribute("font-weight", "bold");
+                        label.textContent = i + 1;
                         
-                        // Tooltip title
                         const title = document.createElementNS(ns, "title");
-                        title.textContent = f.factor;
-                        circle.appendChild(title);
-
-                        svg.appendChild(circle);
+                        title.textContent = `${i + 1}. ${f.factor}`;
+                        
+                        g.appendChild(circle); g.appendChild(label); g.appendChild(title);
+                        svg.appendChild(g);
                     });
                 };
 
-                drawNodes(data.pull || [], pPull, "#2e7d32", "pull");
-                drawNodes(data.push || [], pPush, "#d84315", "push");
-                drawNodes(data.weight || [], pWeight, "#455a64", "weight");
+                drawNodes(data.pull || [], pPull, "#4CAF50", "pull");
+                drawNodes(data.push || [], pPush, "#2196F3", "push");
+                drawNodes(data.weight || [], pWeight, "#E57373", "weight");
 
-                VisModule.container.appendChild(svg);
+                container.appendChild(svg);
             },
 
-            findNodePos: (id, data, p1, p2, p3, c) => {
-                const all = [...(data.pull||[]), ...(data.push||[]), ...(data.weight||[])];
-                const found = all.find(x => x.id === id);
-                return found ? found._pos : null;
+            addLegend: (data) => {
+                const legendDiv = document.getElementById('factor-legend');
+                legendDiv.innerHTML = '';
+                
+                const categories = [
+                    { name: 'Pull', color: '#4CAF50', items: data.pull },
+                    { name: 'Push', color: '#2196F3', items: data.push },
+                    { name: 'Weight', color: '#E57373', items: data.weight }
+                ];
+                
+                categories.forEach(cat => {
+                    if (!cat.items?.length) return;
+                    const section = document.createElement('div');
+                    section.innerHTML = `<strong style="color:${cat.color}; display:block; margin-bottom:5px;">${cat.name}</strong>` +
+                        cat.items.map((f, i) => `<div style="margin-bottom:2px;"><span style="font-weight:bold; color:${cat.color}">${i+1}.</span> ${f.factor.substring(0,30)}...</div>`).join('');
+                    legendDiv.appendChild(section);
+                });
+            },
+
+            renderFactorTables: (data) => {
+                const container = document.getElementById('factors-tables');
+                container.innerHTML = '';
+                
+                const categories = [
+                    { key: 'pull', name: 'Pull of Future', color: '#2e7d32' },
+                    { key: 'push', name: 'Push of Present', color: '#d84315' },
+                    { key: 'weight', name: 'Weight of Past', color: '#455a64' }
+                ];
+                
+                let html = '';
+                categories.forEach(cat => {
+                    const items = data[cat.key] || [];
+                    if (items.length === 0) return;
+                    
+                    html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="color: ${cat.color}; border-bottom: 2px solid ${cat.color}; padding-bottom: 5px;">
+                            ${cat.name}
+                        </h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                            <thead>
+                                <tr style="background: #f5f5f5;">
+                                    <th style="padding: 8px; text-align: left; width: 40px;">#</th>
+                                    <th style="padding: 8px; text-align: left;">Factor</th>
+                                    <th style="padding: 8px; text-align: left;">Explanation & Evidence</th>
+                                    <th style="padding: 8px; text-align: center; width: 60px;">Strength</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${items.map((f, i) => `
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 8px; color: ${cat.color}; font-weight: bold;">${i + 1}</td>
+                                        <td style="padding: 8px; font-weight:600;">${f.factor}</td>
+                                        <td style="padding: 8px;">
+                                            <p style="margin:0 0 5px 0;">${f.explanation || ''}</p>
+                                            <p style="margin:0; font-style: italic; color: #666; font-size:0.9em;">"${f.evidence}"</p>
+                                        </td>
+                                        <td style="padding: 8px; text-align: center;">${f.strength}/5</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+                });
+                container.innerHTML = html;
             }
         };
 
-        // --- 6. UI Module ---
         const UIModule = {
+            currentData: null,
             init: function() {
-                // Drag & Drop
-                const dropZone = document.getElementById('drop-zone');
-                const fileInput = document.getElementById('file-input');
-                
-                dropZone.onclick = () => fileInput.click();
-                dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
-                dropZone.ondragleave = () => dropZone.classList.remove('dragover');
-                dropZone.ondrop = (e) => {
-                    e.preventDefault();
-                    dropZone.classList.remove('dragover');
-                    UIModule.handleFiles(e.dataTransfer.files);
+                // Safety bind helper
+                const bind = (id, event, fn) => {
+                    const el = document.getElementById(id);
+                    if(el) el[event] = fn;
                 };
-                fileInput.onchange = (e) => UIModule.handleFiles(e.target.files);
 
-                // Buttons
-                document.getElementById('btn-analyze').onclick = UIModule.runAnalysis;
-                document.getElementById('btn-new-analysis').onclick = UIModule.resetAnalysis;
+                // Event Listeners
+                bind('btn-analyze', 'onclick', UIModule.runAnalysis);
+                bind('btn-new-analysis', 'onclick', UIModule.resetAnalysis);
                 
-                // Settings Modal
-                const modal = document.getElementById('modal-settings');
-                document.getElementById('btn-settings').onclick = () => {
-                    modal.style.display = 'flex';
-                    UIModule.loadSettings();
-                };
-                document.getElementById('btn-close-settings').onclick = () => modal.style.display = 'none';
+                // Settings Modal Logic
+                bind('btn-settings', 'onclick', () => { 
+                    document.getElementById('modal-settings').style.display = 'flex'; 
+                    UIModule.loadSettings(); 
+                });
+                bind('btn-close-settings', 'onclick', () => {
+                    document.getElementById('modal-settings').style.display = 'none';
+                });
                 
-                // Settings Tabs
+                // Settings Tabs Switching Logic
                 document.querySelectorAll('.settings-nav button').forEach(btn => {
                     btn.onclick = (e) => {
+                        // Deactivate all
                         document.querySelectorAll('.settings-nav button').forEach(b => b.classList.remove('active'));
                         document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+                        // Activate target
                         e.target.classList.add('active');
                         document.getElementById(e.target.dataset.tab).classList.add('active');
                     };
                 });
 
-                // API Key Interactions
-                document.getElementById('btn-test-api').onclick = async () => {
-                    const key = document.getElementById('input-api-key').value;
-                    const statusDot = document.querySelector('.status-dot');
-                    const statusText = document.getElementById('api-status-text');
-                    
-                    statusDot.className = 'status-dot yellow';
-                    statusText.textContent = 'Testing...';
-                    
-                    try {
-                        await APIModule.testConnection(key);
-                        statusDot.className = 'status-dot green';
-                        statusText.textContent = 'Valid';
-                        StorageModule.setApiKey(key);
-                    } catch (e) {
-                        statusDot.className = 'status-dot red';
-                        statusText.textContent = 'Invalid';
-                    }
-                };
-
-                document.getElementById('btn-clear-api').onclick = () => {
-                    StorageModule.clearApiKey();
-                    document.getElementById('input-api-key').value = '';
-                    document.getElementById('api-status-text').textContent = 'Untested';
-                    document.querySelector('.status-dot').className = 'status-dot';
-                };
-
-                // Prompts Interactions
-                document.getElementById('btn-save-prompts').onclick = () => {
-                    StorageModule.setPrompts({
-                        system: document.getElementById('prompt-system').value,
-                        analysis: document.getElementById('prompt-analysis').value
-                    });
-                    alert('Prompts saved!');
-                };
-                document.getElementById('btn-reset-prompts').onclick = () => {
-                    const defaults = StorageModule.getDefaultPrompts();
-                    document.getElementById('prompt-system').value = defaults.system;
-                    document.getElementById('prompt-analysis').value = defaults.analysis;
-                };
+                bind('btn-export-report', 'onclick', () => { 
+                    if(UIModule.currentData) UIModule.openPrintWindow(UIModule.currentData); 
+                    else alert("Run analysis first."); 
+                });
                 
-                // Export
-                document.getElementById('btn-export').onclick = () => {
-                    const svg = document.querySelector('svg');
-                    if(!svg) return alert("Nothing to export");
+                // Image export button logic restored
+                bind('btn-export-img', 'onclick', () => {
+                    const svg = document.querySelector('#visualization-container svg');
+                    if(!svg) return alert("No diagram to export");
                     const svgData = new XMLSerializer().serializeToString(svg);
                     const canvas = document.createElement("canvas");
                     const svgSize = svg.getBoundingClientRect();
-                    canvas.width = svgSize.width;
-                    canvas.height = svgSize.height;
+                    canvas.width = svgSize.width * 2; // High res
+                    canvas.height = svgSize.height * 2;
                     const ctx = canvas.getContext("2d");
+                    ctx.scale(2, 2);
                     const img = document.createElement("img");
                     img.setAttribute("src", "data:image/svg+xml;base64," + btoa(svgData));
                     img.onload = function() {
@@ -688,135 +787,251 @@ IMPORTANT: Do not wrap in markdown code blocks. Return raw JSON.`
                         ctx.fillRect(0,0,canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0);
                         const a = document.createElement('a');
-                        a.download = "futures-triangle.png";
+                        a.download = "futures-triangle-diagram.png";
                         a.href = canvas.toDataURL("image/png");
                         a.click();
                     };
-                };
-
-                // Subscriptions
-                PubSub.subscribe('node-selected', UIModule.showNodeDetails);
+                });
                 
-                // Load existing key
-                const keys = StorageModule.getKeys();
-                if(keys.apiKey) document.getElementById('input-api-key').value = keys.apiKey;
-            },
+                // Key Interactions
+                bind('btn-save-prompts', 'onclick', () => { 
+                    StorageModule.setPrompts({ system: document.getElementById('prompt-system').value, analysis: document.getElementById('prompt-analysis').value }); 
+                    StorageModule.setModelId(document.getElementById('input-model-id').value); 
+                    alert('Saved!'); 
+                });
+                bind('btn-reset-prompts', 'onclick', () => { 
+                    const d = StorageModule.getDefaultPrompts(); 
+                    document.getElementById('prompt-system').value = d.system; 
+                    document.getElementById('prompt-analysis').value = d.analysis; 
+                });
+                
+                // API Test
+                bind('btn-test-api', 'onclick', async () => {
+                    const key = document.getElementById('input-api-key').value;
+                    const model = document.getElementById('input-model-id').value;
+                    try {
+                        document.getElementById('api-status-text').textContent = "Testing...";
+                        await APIModule.testConnection(key, model);
+                        document.getElementById('api-status-text').textContent = "Valid";
+                        StorageModule.setApiKey(key);
+                        StorageModule.setModelId(model);
+                    } catch(e) {
+                        document.getElementById('api-status-text').textContent = "Error";
+                        alert("API Error: " + e.message);
+                    }
+                });
+                
+                bind('btn-clear-api', 'onclick', () => {
+                    StorageModule.clearApiKey();
+                    document.getElementById('input-api-key').value = "";
+                    document.getElementById('api-status-text').textContent = "Cleared";
+                });
 
+                // File inputs & Drag Drop Logic
+                const dropZone = document.getElementById('drop-zone');
+                const fileInput = document.getElementById('file-input');
+                
+                if(dropZone && fileInput) {
+                    dropZone.onclick = () => fileInput.click();
+                    
+                    // Drag Handlers
+                    dropZone.ondragover = (e) => { 
+                        e.preventDefault(); 
+                        dropZone.classList.add('dragover'); 
+                    };
+                    
+                    dropZone.ondragleave = () => { 
+                        dropZone.classList.remove('dragover'); 
+                    };
+                    
+                    dropZone.ondrop = (e) => {
+                        e.preventDefault();
+                        dropZone.classList.remove('dragover');
+                        UIModule.handleFiles(e.dataTransfer.files);
+                    };
+
+                    fileInput.onchange = (e) => UIModule.handleFiles(e.target.files);
+                }
+                
+                const manualInput = document.getElementById('manual-input');
+                if(manualInput) {
+                    manualInput.oninput = () => {
+                        const btn = document.getElementById('btn-analyze');
+                        if(btn) btn.disabled = (UIModule.files.length === 0 && !manualInput.value.trim());
+                    };
+                }
+                
+                UIModule.loadSettings();
+            },
             files: [],
-
-            handleFiles: (fileList) => {
-                for (let file of fileList) UIModule.files.push(file);
+            handleFiles: (list) => {
+                const validFiles = [];
+                let rejected = false;
+                for(let f of list) {
+                    const ext = f.name.split('.').pop().toLowerCase();
+                    if(['pdf', 'docx', 'txt'].includes(ext)) {
+                        validFiles.push(f);
+                    } else {
+                        rejected = true;
+                    }
+                }
+                if(rejected) alert("Some files were skipped. Only PDF, DOCX, and TXT files are supported currently.");
+                
+                for(let f of validFiles) UIModule.files.push(f);
                 UIModule.renderFileList();
-                document.getElementById('btn-analyze').disabled = UIModule.files.length === 0;
+                const btn = document.getElementById('btn-analyze');
+                if(btn && validFiles.length > 0) btn.disabled = false;
             },
-
             renderFileList: () => {
-                const list = document.getElementById('file-list');
-                list.innerHTML = UIModule.files.map((f, i) => `
-                    <li>
-                        <span>${f.name}</span>
-                        <span style="cursor:pointer; color:red;" onclick="UIModule.removeFile(${i})">&times;</span>
-                    </li>
-                `).join('');
+                document.getElementById('file-list').innerHTML = UIModule.files.map((f,i) => `<li>${f.name} <span onclick="UIModule.removeFile(${i})" style="cursor:pointer;color:red">&times;</span></li>`).join('');
             },
-
-            removeFile: (index) => {
-                UIModule.files.splice(index, 1);
+            removeFile: (i) => {
+                UIModule.files.splice(i,1);
                 UIModule.renderFileList();
-                document.getElementById('btn-analyze').disabled = UIModule.files.length === 0;
+                const manualInput = document.getElementById('manual-input');
+                const btn = document.getElementById('btn-analyze');
+                if(btn && manualInput) btn.disabled = (UIModule.files.length === 0 && !manualInput.value.trim());
             },
-
             runAnalysis: async () => {
                 const btn = document.getElementById('btn-analyze');
                 const status = document.getElementById('analysis-status');
                 
-                if (!StorageModule.getKeys().apiKey) {
-                    alert("Please set your API Key in Settings first.");
-                    return;
-                }
-
                 btn.disabled = true;
-                status.innerHTML = '<div class="loader"></div> Extracting text...';
-
+                
                 try {
-                    // 1. Extract Text
-                    let fullText = "";
-                    for (let file of UIModule.files) {
-                        const text = await AnalysisModule.readFile(file);
-                        fullText += `--- Document: ${file.name} ---\n${text}\n\n`;
+                    // 1. Reading
+                    status.innerHTML = '<div class="loader"></div> Reading documents...';
+                    let text = "";
+                    for(let f of UIModule.files) {
+                        status.innerHTML = `<div class="loader"></div> Reading ${f.name}...`;
+                        text += await AnalysisModule.readFile(f) + "\n\n";
+                    }
+                    text += document.getElementById('manual-input').value;
+                    
+                    // 2. Analyzing
+                    status.innerHTML = '<div class="loader"></div> Analyzing with AI...';
+                    const rawData = await APIModule.generate(text);
+                    
+                    // Normalize Data
+                    // Support if AI returns Array (caused the error)
+                    let data = {};
+                    if (Array.isArray(rawData)) {
+                        // Attempt to map flattened array to categories based on IDs
+                        data.pull = rawData.filter(i => i.id && i.id.toLowerCase().includes('pull'));
+                        data.push = rawData.filter(i => i.id && i.id.toLowerCase().includes('push'));
+                        data.weight = rawData.filter(i => i.id && i.id.toLowerCase().includes('weight'));
+                        // If model forgot synthesis in array mode, add placeholder
+                        data.synthesis = "Synthesis not provided in list format."; 
+                        data.relationships = [];
+                    } else {
+                        // Normal object structure
+                        data = rawData;
                     }
 
-                    // 2. Call API
-                    status.innerHTML = '<div class="loader"></div> Analyzing with Gemini...';
-                    const data = await APIModule.generate(fullText);
+                    // Map fields if AI used "factor_name" instead of "factor"
+                    const normalizeItems = (items) => {
+                        if (!items) return [];
+                        return items.map(item => ({
+                            ...item,
+                            factor: item.factor || item.factor_name || "Unknown Factor"
+                        }));
+                    };
 
-                    // 3. Render
-                    VisModule.render(data);
+                    data.pull = normalizeItems(data.pull || data.Pull);
+                    data.push = normalizeItems(data.push || data.Push);
+                    data.weight = normalizeItems(data.weight || data.Weight);
+                    data.synthesis = data.synthesis || data.Synthesis || "";
+
+                    UIModule.currentData = data;
                     
-                    // 4. Update UI
-                    document.getElementById('panel-upload').classList.add('hidden');
-                    document.getElementById('panel-details').classList.remove('hidden');
-                    document.getElementById('placeholder-text').classList.add('hidden');
+                    // 3. Rendering
+                    VisModule.render(data);
+                    VisModule.addLegend(data);
+                    VisModule.renderFactorTables(data);
                     
                     if(data.synthesis) {
-                        const sPanel = document.getElementById('synthesis-panel');
-                        document.getElementById('synthesis-content').textContent = data.synthesis;
-                        sPanel.style.display = 'block';
+                        document.getElementById('synthesis-content').innerHTML = data.synthesis.replace(/\n/g, '<br>');
+                        document.getElementById('synthesis-section').style.display = 'block';
                     }
-
-                } catch (err) {
-                    alert(err.message);
-                    status.innerHTML = `<span style="color:red">${err.message}</span>`;
+                    
+                    document.getElementById('factors-tables-section').style.display = 'block';
+                    document.getElementById('panel-upload').classList.add('hidden');
+                    
+                    status.innerHTML = '';
+                } catch(e) {
+                    console.error(e);
+                    alert(e.message);
+                    status.innerHTML = `<span style="color:red">Error: ${e.message}</span>`;
                 } finally {
                     btn.disabled = false;
                 }
             },
-
-            showNodeDetails: (node) => {
-                const container = document.getElementById('factor-details-container');
-                container.innerHTML = `
-                    <div class="factor-detail-card">
-                        <span class="tag ${node.type}">${node.type.toUpperCase()}</span>
-                        <h3>${node.factor}</h3>
-                        <p><strong>Strength:</strong> ${node.strength}/5</p>
-                        <hr style="border:0; border-top:1px solid #eee; margin: 10px 0;">
-                        <p><strong>Evidence:</strong></p>
-                        <blockquote style="background:#f9f9f9; border-left: 3px solid #ccc; padding: 5px 10px; margin: 0;">
-                            "${node.evidence}"
-                        </blockquote>
-                    </div>
-                `;
-            },
-
             resetAnalysis: () => {
+                UIModule.currentData = null;
+                UIModule.files = [];
+                document.getElementById('file-list').innerHTML = '';
+                document.getElementById('manual-input').value = '';
                 document.getElementById('panel-upload').classList.remove('hidden');
-                document.getElementById('panel-details').classList.add('hidden');
-                document.getElementById('visualization-container').innerHTML = `
-                    <div id="placeholder-text" style="color: #ccc; text-align: center;">
-                        <h2>Futures Triangle</h2>
-                        <p>Upload documents to generate insights</p>
-                    </div>
-                `;
-                document.getElementById('synthesis-panel').style.display = 'none';
+                document.getElementById('visualization-container').innerHTML = '<div id="placeholder-text" style="color:var(--text-light);text-align:center;"><h2>Futures Triangle</h2><p>Upload documents</p></div>';
+                document.getElementById('factor-legend').innerHTML = '';
+                document.getElementById('synthesis-section').style.display = 'none';
+                document.getElementById('factors-tables-section').style.display = 'none';
                 document.getElementById('analysis-status').innerHTML = '';
             },
-
             loadSettings: () => {
                 const keys = StorageModule.getKeys();
-                const defaults = StorageModule.getDefaultPrompts();
+                const defs = StorageModule.getDefaultPrompts();
+                if(keys.apiKey) document.getElementById('input-api-key').value = keys.apiKey;
+                if(keys.modelId) document.getElementById('input-model-id').value = keys.modelId;
+                document.getElementById('prompt-system').value = (keys.prompts || defs).system;
+                document.getElementById('prompt-analysis').value = (keys.prompts || defs).analysis;
+            },
+            openPrintWindow: (data) => {
+                const win = window.open('','_blank');
+                const svg = document.querySelector('#visualization-container svg').outerHTML;
+                const synthesis = document.getElementById('synthesis-content').innerHTML;
+                const tables = document.getElementById('factors-tables').innerHTML;
                 
-                if (keys.apiKey) document.getElementById('input-api-key').value = keys.apiKey;
-                
-                const prompts = keys.prompts || defaults;
-                document.getElementById('prompt-system').value = prompts.system;
-                document.getElementById('prompt-analysis').value = prompts.analysis;
+                win.document.write(`
+                    <html><head><title>Report</title>
+                    <style>
+                        @page { margin: 2cm; }
+                        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 0; margin: 0; color: #333; line-height: 1.6; }
+                        header { background-color: #002244; color: white; padding: 20px 40px; margin-bottom: 40px; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        h1 { margin: 0; font-size: 24px; font-weight: 400; letter-spacing: 1px; }
+                        .meta { font-size: 12px; opacity: 0.8; margin-top: 5px; }
+                        .container { max-width: 800px; margin: 0 auto; padding: 0 20px; }
+                        .vis-container { text-align: center; margin-bottom: 50px; padding: 20px; page-break-inside: avoid; }
+                        .vis-container svg { max-width: 100%; height: auto; max-height: 500px; }
+                        .synthesis-box { background-color: #f8f9fa; border-left: 5px solid #002244; padding: 20px; border-radius: 4px; margin-bottom: 40px; page-break-inside: avoid; }
+                        h3 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 40px; margin-bottom: 20px; color: #002244; font-size: 20px; font-weight: 600; }
+                        table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 30px; }
+                        th { background: #f5f5f5; padding: 8px; text-align: left; }
+                        td { padding: 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+                        @media print { .no-print { display: none; } }
+                    </style>
+                    </head><body>
+                    <button class="no-print" onclick="window.print()" style="position:fixed; top:20px; right:20px; padding:12px 24px; background:#0288D1; color:white; border:none; border-radius:4px; cursor:pointer;">Print Report</button>
+                    <header>
+                        <h1>Futures Triangle Analysis Report</h1>
+                        <div class="meta">Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</div>
+                    </header>
+                    <div class="container">
+                        <div class="vis-container">${svg}</div>
+                        <h3>Most Probable Future</h3>
+                        <div class="synthesis-box">${synthesis}</div>
+                        <h3>Factor Details</h3>
+                        ${tables}
+                    </div>
+                    <script>window.print();<\/script>
+                    </body></html>
+                `);
+                win.document.close();
             }
         };
 
-        // --- Init ---
         AnalysisModule.init();
         UIModule.init();
-
     </script>
 </body>
 </html>
